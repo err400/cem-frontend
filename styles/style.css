@@ -577,11 +577,82 @@ audio { width: 100%; display: block; }
     border: 1px solid var(--border-color); background: var(--bg-surface);
     font-size: 0.95rem; font-weight: 600; color: var(--ink);
 }
+.project-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
 .small-btn {
-    flex: 1; padding: 7px; font-size: 0.8rem; font-weight: 600;
+    flex: 1 1 calc(50% - 5px); padding: 7px; font-size: 0.8rem; font-weight: 600;
     background: var(--bg-surface-hover); color: var(--ink); border: 1px solid var(--border-color);
 }
 .small-btn:hover { background: var(--bg-surface-alt); border-color: var(--forest); }
+#btn-make-public {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 40px;
+    background: linear-gradient(180deg, #FFE27A 0%, #F2BE2A 100%);
+    color: #2D240A;
+    border-color: #B88917;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 0 #8B650E;
+}
+#btn-make-public:hover {
+    background: linear-gradient(180deg, #FFE68E 0%, #EFB51A 100%);
+    border-color: #9C7413;
+}
+#btn-make-public:disabled {
+    opacity: 0.68;
+    box-shadow: none;
+}
+.make-public-control {
+    flex: 1 1 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.make-public-check {
+    flex: 0 0 52px;
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    cursor: pointer;
+}
+.make-public-check input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.make-public-toggle {
+    position: relative;
+    display: block;
+    width: 52px;
+    height: 30px;
+    border-radius: 999px;
+    background: #182718;
+    border: 1px solid #3A5030;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.38);
+}
+.make-public-toggle::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #7C8771;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    transition: transform var(--transition-fast), background var(--transition-fast);
+}
+.make-public-check input:checked + .make-public-toggle {
+    background: #5D4610;
+    border-color: #D3A226;
+}
+.make-public-check input:checked + .make-public-toggle::after {
+    transform: translateX(22px);
+    background: #FFD451;
+}
 
 .param-row { margin-bottom: 14px; }
 .param-label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; }

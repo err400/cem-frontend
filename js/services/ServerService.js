@@ -61,6 +61,65 @@ async function _fetch(url, opts = {}, timeoutMs = 30000) {
 
 const _json = (url, opts, t) => _fetch(url, opts, t).then(r => r.json());
 
+export async function publishActiveProject({ dryRun = false } = {}) {
+    if (!isConfigured()) {
+        throw new Error('Server is not configured. Set Config.server.baseUrl.');
+    }
+    const project = MasterData.getActiveProject();
+    if (!project) throw new Error('No active project. Initialise storage first.');
+    const projectFolder = getProjectFolderName(project);
+
+    return _json(
+        _url('/api/v1/projects/publish'),
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project: projectFolder, dry_run: dryRun }),
+        },
+        2 * 60 * 1000,
+    );
+}
+
+export async function unpublishActiveProject() {
+    if (!isConfigured()) {
+        throw new Error('Server is not configured. Set Config.server.baseUrl.');
+    }
+    const project = MasterData.getActiveProject();
+    if (!project) throw new Error('No active project. Initialise storage first.');
+    const projectFolder = getProjectFolderName(project);
+
+    return _json(
+        _url('/api/v1/projects/unpublish'),
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project: projectFolder }),
+        },
+        30000,
+    );
+}
+
+export async function getActiveProjectServerStatus() {
+    if (!isConfigured()) return { exists: false, is_public: false, visibility: 'private' };
+    const project = MasterData.getActiveProject();
+    if (!project) return { exists: false, is_public: false, visibility: 'private' };
+    const projectFolder = getProjectFolderName(project);
+
+    try {
+        const data = await _json(
+            _url(`/api/v1/projects/status?project=${encodeURIComponent(projectFolder)}`),
+            {},
+            10000,
+        );
+        return { exists: true, ...data };
+    } catch (err) {
+        if (String(err.message || '').startsWith('404 ')) {
+            return { exists: false, is_public: false, visibility: 'private' };
+        }
+        throw err;
+    }
+}
+
 export async function checkServerHealth() {
     if (!_base()) return { online: false, steps: [], error: 'No server URL configured.' };
     try {
@@ -178,6 +237,9 @@ export async function runJobOnServer(opts) {
         job_name:   jobName || `Job ${jobId}`,
         project_id: project.id,
         mode:       'server',
+        compute_origin: 'server',
+        execution_backend: 'direct',
+        server_compute: true,
         status:     'processing',
         created_at: new Date().toISOString(),
         server: { base_url: _base(), job_id: jobId, task_id: null },
@@ -263,6 +325,8 @@ export async function runJobOnServer(opts) {
 
         if (result.status === 'queued') {
             record.mode = 'airflow';
+            record.compute_origin = 'server';
+            record.execution_backend = 'airflow';
             record.server.dag_run_id = result.dag_run_id || null;
             await _writeJobRecord(projectFolder, jobId, record, 'processing');
 

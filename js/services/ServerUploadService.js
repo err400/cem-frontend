@@ -77,6 +77,18 @@ export async function uploadSelectedAudio(
 
     const filesBySpot = {};
     const fileMap = {};
+    const diagnostics = {
+        selected_spots: spotIds.length,
+        spot_note_audio_seen: 0,
+        spot_note_audio_accepted: 0,
+        external_seen: externalFiles.length,
+        external_reference: 0,
+        external_no_local_path: 0,
+        external_bad_extension: 0,
+        external_out_of_range: 0,
+        external_unlinked: 0,
+        external_accepted: 0,
+    };
     const add = (spotKey, fname, path) => {
         if (!filesBySpot[spotKey]) { filesBySpot[spotKey] = []; fileMap[spotKey] = []; }
         if (!filesBySpot[spotKey].includes(fname)) {
@@ -98,25 +110,60 @@ export async function uploadSelectedAudio(
         if (!spot) continue;
         const spotKey = spot.name.replace(/\s+/g, '').toUpperCase();
         if (spot.audio_local_filename) {
+            diagnostics.spot_note_audio_seen++;
             const fname = spot.audio_local_filename.split('/').pop();
             if (extRegex.test(fname) && inRange(fname)) {
                 add(spotKey, fname, spot.audio_local_filename);
+                diagnostics.spot_note_audio_accepted++;
             }
         }
     }
 
     for (const ef of externalFiles) {
-        if (!extRegex.test(ef.name) || !inRange(ef.name) || !ef.local_path) continue;
+        if (ef.is_reference) {
+            diagnostics.external_reference++;
+            continue;
+        }
+        if (!ef.local_path) {
+            diagnostics.external_no_local_path++;
+            continue;
+        }
+        if (!extRegex.test(ef.name)) {
+            diagnostics.external_bad_extension++;
+            continue;
+        }
+        if (!inRange(ef.name)) {
+            diagnostics.external_out_of_range++;
+            continue;
+        }
         const linked = (ef.linked_spots || []).filter(id => spotIdSet.has(id));
+        if (linked.length === 0) {
+            diagnostics.external_unlinked++;
+            continue;
+        }
         for (const spotId of linked) {
             const spot = spots.find(s => s.spotId === spotId);
             if (!spot) continue;
             add(spot.name.replace(/\s+/g, '').toUpperCase(), ef.name, ef.local_path);
+            diagnostics.external_accepted++;
         }
     }
 
     const totalBefore = Object.values(filesBySpot).reduce((s, a) => s + a.length, 0);
-    if (totalBefore === 0) return { uploaded: 0, skipped: 0, total: 0 };
+    if (totalBefore === 0) {
+        const exts = (validExts && validExts.length ? validExts : ['.wav']).join(', ');
+        console.warn('[ServerUpload] No uploadable audio diagnostics:', diagnostics);
+        throw new Error(
+            `No uploadable audio found for the selected spot/date range. ` +
+            `Server analysis uploads only non-reference, linked ${exts} files. ` +
+            `External media seen: ${diagnostics.external_seen}; ` +
+            `accepted: ${diagnostics.external_accepted}; ` +
+            `reference: ${diagnostics.external_reference}; ` +
+            `wrong extension: ${diagnostics.external_bad_extension}; ` +
+            `outside date range: ${diagnostics.external_out_of_range}; ` +
+            `not linked to selected spot: ${diagnostics.external_unlinked}.`
+        );
+    }
 
     onProgress(`Checking ${totalBefore} file(s) against server…`);
     const toUpload = await checkFilesForUpload(filesBySpot);
@@ -142,7 +189,10 @@ export async function uploadSelectedAudio(
             let appended = 0;
             for (const f of batch) {
                 const blob = await StorageAdapter.getFileBlob(f.path);
-                if (!blob) continue;
+                if (!blob) {
+                    console.warn('[ServerUpload] Could not read local file blob:', f.path);
+                    continue;
+                }
                 fd.append('files', blob, f.name);
                 appended++;
             }
@@ -155,6 +205,13 @@ export async function uploadSelectedAudio(
             );
             uploaded += appended;
         }
+    }
+
+    if (totalNeeded > 0 && uploaded === 0) {
+        throw new Error(
+            `Found ${totalNeeded} audio file(s) to upload, but none could be read from local storage. ` +
+            `If these were imported as references or moved on disk, re-import them as normal local files before running server analysis.`
+        );
     }
 
     onProgress(`Uploaded ${uploaded} file(s), ${skipped} already on server.`, 100);

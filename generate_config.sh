@@ -8,6 +8,7 @@ ANALYSIS_REPO_URL="${ANALYSIS_REPO_URL:-https://raw.githubusercontent.com/xHrid/
 
 CORS_PROXY_URL="${CORS_PROXY_URL:-https://cem-proxy.cem-cors.workers.dev}"
 
+SERVER_BASE_URL="${SERVER_BASE_URL:-http://localhost:8002}"
 SERVER_BASE_URL="${SERVER_BASE_URL%/}"
 
 AIRFLOW_TRIGGER_URL="${AIRFLOW_TRIGGER_URL%/}"
