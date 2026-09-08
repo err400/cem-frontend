@@ -340,19 +340,45 @@ let _availableDates = new Set();
 
 let _calendarState = { start: null, end: null };
 
+// Must stay identical to Project._parse_date_from_filename in
+// server/app/projects.py, which is r'_(\d{8})_\d{6}'. The date part alone is not
+// enough: a name like SPOT_20260131_notes.wav satisfies /_(\d{8})_/ here but not
+// the server's pattern, so the page would count a day the server then treats as
+// undated. Whatever this page promises about a date range, the server is the one
+// that has to deliver it.
+const FILENAME_DATE = /_(\d{8})_\d{6}/;
+const AUDIO_EXTENSIONS = /\.(wav|mp3|m4a|flac)$/i;
+
 function _getAvailableDates(spotIds) {
     const idSet = new Set(spotIds);
     const dates = new Set();
-    const externalFiles = getExternalFiles();
-    const audioExts = /\.(wav|mp3|m4a|flac)$/i;
 
-    externalFiles.forEach(f => {
-        if (!audioExts.test(f.name)) return;
+    getExternalFiles().forEach(f => {
+        if (!AUDIO_EXTENSIONS.test(f.name)) return;
         if (!f.linked_spots || !f.linked_spots.some(id => idSet.has(id))) return;
-        const m = f.name.match(/_(\d{8})_/);
+        const m = f.name.match(FILENAME_DATE);
         if (m) dates.add(m[1]);
     });
     return dates;
+}
+
+// Audio attached to the selected spots whose filename carries no parseable date.
+//
+// These matter to the summary because the server does NOT filter them out:
+// populate_job and in_range_audio both fall through to including a file when
+// _parse_date_from_filename returns None. So a range with no matching dates can
+// still analyse something, and saying "no recordings in this range" would be a
+// lie. Counted separately and reported separately.
+function _countUndatedAudio(spotIds) {
+    const idSet = new Set(spotIds);
+    let undated = 0;
+
+    getExternalFiles().forEach(f => {
+        if (!AUDIO_EXTENSIONS.test(f.name)) return;
+        if (!f.linked_spots || !f.linked_spots.some(id => idSet.has(id))) return;
+        if (!FILENAME_DATE.test(f.name)) undated += 1;
+    });
+    return undated;
 }
 
 function _refreshAvailableDates() {
@@ -548,10 +574,98 @@ function _initFileSelectorListener() {
     _fileSelectorListenerAttached = true;
 }
 
+// "2026-01-31" -> "20260131", the compact form the filenames and the server use.
+// The server compares these as STRINGS, not dates, so the comparison below has to
+// use the same form: "20260131" > "2026-01-31" is true, because '0' sorts after
+// '-'. Zero-padded YYYYMMDD is the one representation where lexical order and
+// chronological order agree.
+function _compactDate(isoDate) {
+    return isoDate ? isoDate.replace(/-/g, '') : '';
+}
+
+function _daysBetweenInclusive(isoStart, isoEnd) {
+    const start = Date.parse(isoStart);
+    const end   = Date.parse(isoEnd);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+    // Date.parse on a bare YYYY-MM-DD is UTC by spec, so both ends shift by the
+    // same offset and the difference is exact -- no DST or timezone drift.
+    return Math.round((end - start) / 86400000) + 1;
+}
+
+// Tell the user, before they queue anything, how much of the range they picked
+// actually has audio behind it. The information already existed -- the calendar
+// that was meant to show it never renders -- but the form gave no hint, so a
+// range chosen off a wrong guess failed later at the server with a 409 and no
+// explanation of which days were empty.
+//
+// Reporting only. It never disables Run: a partly-empty range is a perfectly
+// normal thing to want, and a zero-coverage range can still be legitimate when
+// undated files are attached.
+function _updateDateCoverage() {
+    const ackEl = document.getElementById('analysis-file-acknowledgement');
+    if (!ackEl) return;
+
+    const checked = Array.from(document.querySelectorAll('.analysis-spot-checkbox:checked'));
+    const start   = document.getElementById('analysis-start-date')?.value || '';
+    const end     = document.getElementById('analysis-end-date')?.value   || '';
+
+    if (checked.length === 0) {
+        ackEl.textContent = 'Select spots and a date range, then queue your job.';
+        return;
+    }
+
+    const spotIds = checked.map(cb => cb.value);
+    const undated = _countUndatedAudio(spotIds);
+    const undatedNote = undated > 0
+        ? ` ${undated} file(s) have no date in their name; the server analyses those whatever range you pick.`
+        : '';
+
+    if (!start || !end) {
+        const available = _availableDates.size;
+        ackEl.textContent = available > 0
+            ? `${available} day(s) with recordings for the selected spot(s). Pick a date range.${undatedNote}`
+            : `No dated recordings for the selected spot(s).${undatedNote}`;
+        return;
+    }
+
+    if (_compactDate(start) > _compactDate(end)) {
+        ackEl.textContent = 'End date is before start date.';
+        return;
+    }
+
+    const startKey = _compactDate(start);
+    const endKey   = _compactDate(end);
+
+    // Walk the available dates, not the range. A user can type 0001-01-01 into a
+    // date input, and iterating day by day over that would hang the page; the
+    // number of days with recordings is always small.
+    let withAudio = 0;
+    _availableDates.forEach(day => {
+        if (day >= startKey && day <= endKey) withAudio += 1;
+    });
+
+    const totalDays = _daysBetweenInclusive(start, end);
+    const empty     = Math.max(totalDays - withAudio, 0);
+
+    if (withAudio === 0) {
+        ackEl.textContent = undated > 0
+            ? `None of the ${totalDays} day(s) in this range have dated recordings.${undatedNote}`
+            : `None of the ${totalDays} day(s) in this range have recordings — the server will reject this job.`;
+        return;
+    }
+
+    ackEl.textContent =
+        `${withAudio} of ${totalDays} day(s) in this range have recordings` +
+        (empty > 0 ? ` (${empty} with none).` : '.') +
+        undatedNote;
+}
+
 function _updateFormReadiness() {
     const checkedSpots = document.querySelectorAll('.analysis-spot-checkbox:checked');
     const start        = document.getElementById('analysis-start-date')?.value;
     const end          = document.getElementById('analysis-end-date')?.value;
+
+    _updateDateCoverage();
 
     if (checkedSpots.length > 0 && start && end) {
         _setFormReady(true);

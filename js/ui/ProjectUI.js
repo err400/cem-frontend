@@ -275,6 +275,14 @@ async function _handleMakePublic() {
     }
 }
 
+// The reference-import note is advice, not a decision: it is the same sentence
+// every time and nothing depends on the user acknowledging it. Firing it on
+// every tick of the checkbox turned a one-line hint into a modal the user has
+// to dismiss repeatedly while making up their mind. Once per page load is
+// enough to inform; the storageKey below still suppresses it across reloads for
+// anyone who ticks "Don't show again".
+let _referenceNoteShownThisSession = false;
+
 function _initImportMediaForm() {
     const importBtn       = document.getElementById('import-media-btn');
     const spotContainer   = document.getElementById('spot-selection-container');
@@ -288,7 +296,10 @@ function _initImportMediaForm() {
     if (refCheckbox && baseDirContainer) {
         refCheckbox.addEventListener('change', () => {
             baseDirContainer.style.display = refCheckbox.checked ? 'block' : 'none';
-            if (refCheckbox.checked) {
+            if (refCheckbox.checked && !_referenceNoteShownThisSession) {
+                // Set before showing, not after: showAckDialog is async, and a
+                // fast double-tick would otherwise open two overlays.
+                _referenceNoteShownThisSession = true;
                 showAckDialog({
                     title: 'Reference import',
                     message: "Files imported as reference can't be analysed on the server. They can only be analysed locally with the watcher.",
