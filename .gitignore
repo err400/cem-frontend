@@ -23,9 +23,13 @@ logs/
 
 # ---- Tests ----
 tests/
+!tests/
+tests/*
+!tests/debug.test.mjs
 
 # ---- Docs ----
 *.md
+!DEBUGGING.md
 
 # ---- Dependencies / build ----
 node_modules/

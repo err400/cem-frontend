@@ -1,3 +1,5 @@
+import { debug, debugFetch as fetch } from '../core/Debug.js';
+
 import Config                    from '../core/Config.js';
 import EventBus, { EVENTS }      from '../core/EventBus.js';
 import * as StorageAdapter       from '../data/StorageAdapter.js';
@@ -224,6 +226,7 @@ export async function runJobOnServer(opts) {
     const stepId     = currentScript.id;
     const isBirdnet  = stepId === 'birdnet';
     const jobId      = _generateJobId();
+    debug('job.start', { jobId, step: stepId, spots: spotIds.length });
 
     const jobData = buildJobData(
         jobName, currentScript, spotIds, startDate, endDate,
@@ -304,6 +307,7 @@ export async function runJobOnServer(opts) {
             clearTimeout(dispatchTimer);
         }
         result = await resp.json().catch(() => ({}));
+        debug('job.dispatch', { jobId, httpStatus: resp.status, status: result.status, taskId: result.task_id });
 
         const _failJob = async (message, tid) => {
             let logText = '';
@@ -397,6 +401,7 @@ export async function runJobOnServer(opts) {
         record.status      = 'completed';
         record.finished_at = new Date().toISOString();
         record.result_count = saved;
+        debug('job.finish', { jobId, step: stepId, files: saved });
         await _moveJobRecord(projectFolder, jobId, record, 'processing', 'completed');
 
         try {
@@ -412,6 +417,7 @@ export async function runJobOnServer(opts) {
     } catch (e) {
         try {
             record.status = 'failed';
+            debug('job.failed', { jobId, step: stepId, error: e.name });
             record.error  = record.error || e.message;
             record.finished_at = record.finished_at || new Date().toISOString();
             await _moveJobRecord(projectFolder, jobId, record, 'processing', 'failed');

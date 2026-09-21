@@ -1,3 +1,5 @@
+import { debug } from './Debug.js';
+
 export const EVENTS = Object.freeze({
     STORAGE_READY: 'storage-ready',
     DATA_UPDATED: 'data-updated',
@@ -14,8 +16,6 @@ export const EVENTS = Object.freeze({
     SYNC_STATUS: 'sync-status',
     SYNC_IMPORTED_MEDIA_ENABLED: 'sync-imported-media-enabled',
 });
-
-const DEV = (typeof localStorage !== 'undefined' && localStorage.getItem('debug') === '1');
 
 const EventBus = (() => {
     const _subscribers = new Map();
@@ -41,7 +41,7 @@ const EventBus = (() => {
 
     function emit(eventType, data) {
         const envelope = Object.freeze({ type: eventType, data, timestamp: new Date().toISOString() });
-        if (DEV) ;
+        debug('event.emit', { type: eventType, subscribers: _subscribers.get(eventType)?.size || 0 });
 
         const specific = _subscribers.get(eventType);
         if (specific) {

@@ -1,3 +1,5 @@
+import { debug, debugFetch as fetch } from '../core/Debug.js';
+
 import Config from '../core/Config.js';
 import * as StorageAdapter from '../data/StorageAdapter.js';
 import * as MasterData from '../data/MasterData.js';
@@ -150,6 +152,7 @@ export async function uploadSelectedAudio(
     }
 
     const totalBefore = Object.values(filesBySpot).reduce((s, a) => s + a.length, 0);
+    debug('upload.selection', { ...diagnostics, eligible: totalBefore });
     if (totalBefore === 0) {
         const exts = (validExts && validExts.length ? validExts : ['.wav']).join(', ');
         console.warn('[ServerUpload] No uploadable audio diagnostics:', diagnostics);
@@ -169,6 +172,7 @@ export async function uploadSelectedAudio(
     const toUpload = await checkFilesForUpload(filesBySpot);
     const totalNeeded = Object.values(toUpload).reduce((s, a) => s + a.length, 0);
     const skipped = totalBefore - totalNeeded;
+    debug('upload.plan', { total: totalBefore, needed: totalNeeded, skipped });
     if (totalNeeded === 0) return { uploaded: 0, skipped, total: totalBefore };
 
     let uploaded = 0;
@@ -197,6 +201,7 @@ export async function uploadSelectedAudio(
                 appended++;
             }
             if (appended === 0) continue;
+            debug('upload.batch', { spot: spotKey, files: appended, uploaded });
 
             await _fetch(
                 _url('/api/v1/projects/upload/audio'),
@@ -215,6 +220,7 @@ export async function uploadSelectedAudio(
     }
 
     onProgress(`Uploaded ${uploaded} file(s), ${skipped} already on server.`, 100);
+    debug('upload.finish', { uploaded, skipped });
     return { uploaded, skipped, total: totalBefore };
 }
 
