@@ -1,3 +1,5 @@
+import { debugFetch as fetch } from '../core/Debug.js';
+
 import {
     getAllJobs,
     getJobResultFiles,

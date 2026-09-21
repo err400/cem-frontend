@@ -1,3 +1,5 @@
+import { debug } from '../core/Debug.js';
+
 import {
     getWatcherStatus,
     getInstalledScripts,
@@ -257,5 +259,6 @@ export function buildJobData(
 }
 
 export async function queueJob(jobData) {
+    debug('job.local_queue', { script: jobData.script_name, datasets: jobData.datasets?.length || 0 });
     return saveJobRequest(jobData);
 }

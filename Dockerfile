@@ -6,6 +6,9 @@
 FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker-entrypoint.d/15-debug.sh /docker-entrypoint.d/15-debug.sh
+RUN chmod +x /docker-entrypoint.d/15-debug.sh
+COPY runtime-debug.js /usr/share/nginx/html/runtime-debug.js
 
 # js/core/Config.js is generated when the container starts, not baked in --
 # docker-compose bind-mounts ./js over the image's copy, so anything written
