@@ -9,6 +9,7 @@ import { initProjectUI }      from './ui/ProjectUI.js';
 import { initAnalysis }       from './ui/AnalysisUI.js';
 import { initJobsDashboard }  from './ui/JobsDashboard.js';
 import { initSharingUI }     from './ui/SharingUI.js';
+import { initHelpGuide }     from './ui/HelpGuide.js';
 
 import { initApp } from './core/App.js';
 
@@ -25,6 +26,9 @@ function bootstrap() {
     initAnalysis();
     initJobsDashboard();
     initSharingUI();
+    // Before initApp: the guide must work before storage is initialised,
+    // since "what do I do first" is the question it exists to answer.
+    initHelpGuide();
 
     initApp();
 

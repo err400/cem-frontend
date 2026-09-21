@@ -31,6 +31,28 @@
     <main>
         <button id="menu-toggle" aria-label="Toggle sidebar menu">☰</button>
         <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+        <button id="help-toggle" class="help-toggle" type="button"
+                aria-controls="help-guide" aria-expanded="false" title="Field guide (press ?)">
+            <span aria-hidden="true">?</span>
+            <span class="sr-only">Open the field guide</span>
+        </button>
+
+        <!-- Field guide: the user manual, written as a naturalist's notebook.
+             Entries live in js/ui/HelpGuide.js. -->
+        <aside id="help-guide" class="help-guide" hidden aria-labelledby="help-guide-title">
+            <div class="help-guide-inner">
+                <header class="help-guide-header">
+                    <p class="help-kicker">Field guide</p>
+                    <h2 id="help-guide-title">From a place to a published map</h2>
+                    <button id="help-close" class="help-close" type="button" aria-label="Close the field guide">×</button>
+                </header>
+                <ol id="help-entries" class="help-entries"></ol>
+                <footer class="help-guide-footer">
+                    Press <kbd>?</kbd> any time to reopen this. <kbd>Esc</kbd> closes it.
+                </footer>
+            </div>
+        </aside>
+        <div id="help-backdrop" class="help-backdrop" hidden></div>
         <nav id="controls" class="open" aria-label="Control panel">
 
             <div id="auth-section"></div>
