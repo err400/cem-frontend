@@ -1,4 +1,4 @@
-# CEM Compute — Researcher Workspace
+# CEM Frontend
 
 Researcher workspace for projects, monitoring spots, audio imports, local/server
 analysis, and publication to CEM Master. Built with HTML, JavaScript, CSS and
