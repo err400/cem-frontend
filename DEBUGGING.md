@@ -1,6 +1,6 @@
 # Debug Logging
 
-Set `DEBUG=true` in the sibling `cem-backend2/.env`, then recreate that Compose
+Set `DEBUG=true` in the sibling `cem-backend/.env`, then recreate that Compose
 stack with `up -d --build`. This repo's frontend is owned by that stack.
 A frontend-only `.env` is not loaded by the owning Compose stack.
 
