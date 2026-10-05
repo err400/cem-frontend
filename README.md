@@ -6,12 +6,9 @@ Leaflet; browser storage is initialized separately from optional Google Drive sy
 
 ## Local setup links
 
-- [Local setup in the sibling checkout](../cem-master-backend/docs/local-setup.md)
-- [Local setup on GitHub](https://github.com/err400/cem-master-backend/blob/HEAD/docs/local-setup.md)
-- [Full setup/environment guide in the sibling checkout](../cem-master-backend/CEM_SETUP_GUIDE.md)
+- [Local setup guide](https://github.com/err400/cem-master-backend/blob/yuvika_branch/docs/local-setup.md)
+- [Full setup and environment guide](https://github.com/err400/cem-master-backend/blob/yuvika_branch/CEM_SETUP_GUIDE.md)
 
-The local guide includes all four clone commands and the database/Alembic startup
-sequence. Keep the four repositories side by side so the local links work.
 
 ## Setup
 
@@ -19,7 +16,7 @@ The [compute backend](https://github.com/err400/cem-backend) owns the Compose st
 that builds and serves this UI. Keep the repositories side by side or set
 `COMPUTE_FRONTEND_CONTEXT` in the compute backend's `.env`.
 
-Follow the [complete setup guide](https://github.com/err400/cem-master-backend/blob/HEAD/CEM_SETUP_GUIDE.md)
+Follow the [complete setup guide](https://github.com/err400/cem-master-backend/blob/yuvika_branch/CEM_SETUP_GUIDE.md)
 for all four repositories and the environment reference. The local UI is
 http://localhost:8080; the local compute API is http://localhost:8002.
 
@@ -46,7 +43,7 @@ server analysis requires uploadable original files. Browser microphone attachmen
 are not automatically a substitute for correctly named field WAVs.
 
 For the full verification workflow, see
-[HOW_TO_TEST.md](https://github.com/err400/cem-master-backend/blob/HEAD/HOW_TO_TEST.md).
+[HOW_TO_TEST.md](https://github.com/err400/cem-master-backend/blob/yuvika_branch/HOW_TO_TEST.md).
 
 ## Development and diagnostics
 
@@ -57,5 +54,5 @@ The local watcher is `watcher.py`; use it only for local analysis.
 node --test tests/*.test.mjs
 ```
 
-See [DEBUGGING.md](DEBUGGING.md) for browser logging and the compute backend's
+See [DEBUGGING.md](https://github.com/err400/cem-frontend/blob/yuvika_branch/DEBUGGING.md) for browser logging and the compute backend's
 README for pipeline, FileBrowser, Airflow and Earth Engine configuration.
