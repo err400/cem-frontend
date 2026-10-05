@@ -29,6 +29,7 @@ tests/*
 
 # ---- Docs ----
 *.md
+!README.md
 !DEBUGGING.md
 
 # ---- Dependencies / build ----
