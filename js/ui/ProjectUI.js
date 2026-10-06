@@ -14,6 +14,9 @@ import {
 import { showToast }                 from './Toast.js';
 import { openModal, closeModal }     from './ModalManager.js';
 import { showAckDialog, showConfirmDialog } from './Dialog.js';
+import {
+    CONVENTION, CONVENTION_EXAMPLE, checkRecordingNames, summariseNames,
+} from '../core/FilenameConvention.js';
 
 export function initProjectUI() {
     _initProjectDropdown();
@@ -283,6 +286,34 @@ async function _handleMakePublic() {
 // anyone who ticks "Don't show again".
 let _referenceNoteShownThisSession = false;
 
+// Inline warning under the file picker. Shown as soon as files are chosen, so
+// the user can rename them before anything is uploaded -- not discovered later
+// as missing detections.
+function _renderNamingWarning(files) {
+    const box = document.getElementById('naming-warning');
+    if (!box) return;
+    const { badNames, unsupported } = checkRecordingNames(files.map(f => f.name));
+    const lines = [];
+    if (badNames.length) {
+        lines.push(
+            `<strong>${badNames.length} file(s) don't follow <code>${_esc(CONVENTION)}</code>:</strong> ` +
+            `${_esc(summariseNames(badNames))}. Their date and time can't be read, so their ` +
+            `detections will be left out of date-based results. Rename them like ` +
+            `<code>${CONVENTION_EXAMPLE}</code> before importing.`);
+    }
+    if (unsupported.length) {
+        lines.push(
+            `<strong>${unsupported.length} file(s) are in a format the analysis can't read:</strong> ` +
+            `${_esc(summariseNames(unsupported))}. Convert them to WAV.`);
+    }
+    box.innerHTML = lines.map(l => `<p>${l}</p>`).join('');
+    box.hidden = lines.length === 0;
+}
+
+function _esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function _initImportMediaForm() {
     const importBtn       = document.getElementById('import-media-btn');
     const spotContainer   = document.getElementById('spot-selection-container');
@@ -338,6 +369,9 @@ function _initImportMediaForm() {
 
     cancelImportBtn?.addEventListener('click', () => closeModal('import-media-popup'));
 
+    const fileInputEl = document.getElementById('external-file-input');
+    fileInputEl?.addEventListener('change', () => _renderNamingWarning(Array.from(fileInputEl.files || [])));
+
     importForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -360,6 +394,31 @@ function _initImportMediaForm() {
 
             if (selectedSpotIds.length === 0) throw new Error('Please select at least one spot.');
             if (files.length === 0)           throw new Error('Please select files.');
+
+            // A warning, not a block: the user may knowingly import odd names
+            // (e.g. reference clips). But they decide here, before the upload.
+            const { badNames, unsupported } = checkRecordingNames(files.map(f => f.name));
+            if (badNames.length || unsupported.length) {
+                const parts = [];
+                if (badNames.length) {
+                    parts.push(`${badNames.length} file(s) don't follow the naming convention <code>${_esc(CONVENTION)}</code> ` +
+                        `(e.g. ${CONVENTION_EXAMPLE}): ${_esc(summariseNames(badNames))}. ` +
+                        `Their date and time can't be read, so their detections will be left out of date-based results.`);
+                }
+                if (unsupported.length) {
+                    parts.push(`${unsupported.length} file(s) are in a format the analysis can't read: ` +
+                        `${_esc(summariseNames(unsupported))}. Convert them to WAV.`);
+                }
+                // showConfirmDialog renders message as HTML, so file names are
+                // escaped above and paragraphs joined with <br>, not \n.
+                const proceed = await showConfirmDialog({
+                    title: 'Check your file names',
+                    message: parts.join('<br><br>') + '<br><br>Import anyway?',
+                    confirmText: 'Import anyway',
+                    cancelText: 'Go back and rename',
+                });
+                if (!proceed) return;   // finally{} restores the button
+            }
 
             let importDate       = new Date();
             const useCurrentCb   = document.getElementById('import-use-current-time');
@@ -398,6 +457,7 @@ function _initImportMediaForm() {
             showToast(`${importAsRef ? 'Referenced' : 'Imported'} ${files.length} file(s) successfully.`, 'success');
             closeModal('import-media-popup');
             importForm.reset();
+            _renderNamingWarning([]);
 
             const refBaseDirEl = document.getElementById('reference-base-dir-container');
             if (refBaseDirEl) refBaseDirEl.style.display = 'none';

@@ -40,7 +40,7 @@ const ENTRIES = [
     {
         mark: '♫',
         title: 'Import media',
-        what: 'Bring in recordings from a Song Meter or a folder. Each file is assigned to a spot; the filename supplies the date and time.',
+        what: 'Bring in recordings from a Song Meter or a folder. Each file is assigned to a spot, and its date and time are read from its name: SPOT_YYYYMMDD_HHMMSS.wav, the Song Meter convention.',
         how: 'Tick Import as reference for library recordings you want to keep but never analyse. The form tells you how many days the files cover before you run anything.',
     },
     {

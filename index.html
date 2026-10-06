@@ -225,6 +225,18 @@
                 <div id="spot-selection-container" class="import-multi-select-box"></div>
                 <input type="file" id="external-file-input" name="files" class="import-file-input" multiple required>
 
+                <!-- Filename convention. The pipeline reads date and time from the
+                     recording's NAME only, so this is said before anything is
+                     uploaded. Checked live by js/core/FilenameConvention.js. -->
+                <div class="naming-hint">
+                    <strong>Name recordings as</strong>
+                    <code>SPOT_YYYYMMDD_HHMMSS.&lt;ext&gt;</code>
+                    <span class="naming-example">e.g. <code>04213SPOT1_20260131_082409.wav</code></span>
+                    <span class="naming-note">This is the Song Meter naming convention. The date and time of each
+                        recording are read from its name, so please follow it. Use WAV (FLAC, MP3 and OGG also work).</span>
+                </div>
+                <div id="naming-warning" class="naming-warning" role="alert" hidden></div>
+
                 <div style="margin:10px 0;">
                     <label class="ref-toggle">
                         <input type="checkbox" id="import-as-reference" />

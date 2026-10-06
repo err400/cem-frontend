@@ -945,3 +945,27 @@ body.panel-open .help-toggle { opacity: 0; pointer-events: none; transform: tran
     .help-entry  { animation: none; opacity: 1; transform: none; }
     .help-toggle { transition: none; }
 }
+
+/* Filename convention hint + warning in the Import Media dialog.
+   See js/core/FilenameConvention.js. */
+.naming-hint {
+    margin: 8px 0 4px; padding: 8px 10px;
+    background: var(--bg-surface-alt); border-radius: var(--radius-sm);
+    font-size: 0.78rem; line-height: 1.45; color: var(--ink);
+}
+.naming-hint strong { display: block; margin-bottom: 2px; }
+.naming-hint code, .naming-warning code {
+    font-family: var(--font-mono); font-size: 0.74rem;
+    background: var(--bg-surface); padding: 1px 4px; border-radius: 3px;
+    border: 1px solid var(--border-color); white-space: nowrap;
+}
+.naming-example { display: block; margin-top: 3px; color: var(--ink-soft); }
+.naming-note { display: block; margin-top: 4px; color: var(--ink-soft); }
+.naming-warning {
+    margin: 6px 0 4px; padding: 8px 10px;
+    border: 1px solid var(--amber); border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--amber) 10%, var(--bg-surface));
+    font-size: 0.78rem; line-height: 1.45; color: var(--ink);
+}
+.naming-warning p { margin: 0; }
+.naming-warning p + p { margin-top: 6px; }
