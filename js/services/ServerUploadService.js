@@ -1,3 +1,4 @@
+import { ensureServerProjectFolder } from './ServerProjectIdentity.js';
 import { debug, debugFetch as fetch } from '../core/Debug.js';
 
 import Config from '../core/Config.js';
@@ -47,8 +48,7 @@ function _projectFolder() {
     return getProjectFolderName(project);
 }
 
-export async function checkFilesForUpload(filesBySpot) {
-    const name = _projectFolder();
+export async function checkFilesForUpload(filesBySpot, name = _projectFolder()) {
     const resp = await _json(
         _url('/api/v1/projects/check-files'),
         {
@@ -68,7 +68,7 @@ export async function uploadSelectedAudio(
     { spotIds, startDate, endDate, validExts, spots, externalFiles },
     onProgress = () => {},
 ) {
-    const name = _projectFolder();
+    const project = MasterData.getActiveProject();
 
     const startVal = startDate ? parseInt(startDate.replace(/-/g, ''), 10) : null;
     const endVal   = endDate ? parseInt(endDate.replace(/-/g, ''), 10) : null;
@@ -168,8 +168,9 @@ export async function uploadSelectedAudio(
         );
     }
 
+    const name = await ensureServerProjectFolder(project);
     onProgress(`Checking ${totalBefore} file(s) against server…`);
-    const toUpload = await checkFilesForUpload(filesBySpot);
+    const toUpload = await checkFilesForUpload(filesBySpot, name);
     const totalNeeded = Object.values(toUpload).reduce((s, a) => s + a.length, 0);
     const skipped = totalBefore - totalNeeded;
     debug('upload.plan', { total: totalBefore, needed: totalNeeded, skipped });

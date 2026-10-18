@@ -76,7 +76,25 @@ export async function renameProject(projectId, newName) {
         throw new Error('ProjectManager.renameProject: name cannot be empty.');
     }
 
-    const renamed = touch({ ...project, name: trimmed });
+    // Preserve existing local data as well as legacy server folders.
+    let storageFolder = project.storage_folder;
+    if (!storageFolder) {
+        const { listAllFileKeys } = await import('./StorageAdapter.js');
+        const folder = getProjectFolderName(project);
+        const keys = await listAllFileKeys();
+        if (keys.some(key => key.startsWith(`${folder}/`))) storageFolder = folder;
+    }
+    if (!storageFolder) {
+        const { getActiveProjectServerStatus } = await import('../services/ServerService.js');
+        const status = await getActiveProjectServerStatus(project);
+        if (status.exists) storageFolder = getProjectFolderName(project);
+    }
+
+    const renamed = touch({
+        ...project,
+        ...(storageFolder ? { storage_folder: storageFolder } : {}),
+        name: trimmed,
+    });
 
     const prevProjects = state.projects;
     state.projects = state.projects.map(p => (p === project ? renamed : p));
