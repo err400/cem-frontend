@@ -26,6 +26,8 @@ tests/
 !tests/
 tests/*
 !tests/debug.test.mjs
+!tests/projectUtils.test.mjs
+!tests/serverProjectIdentity.test.mjs
 
 # ---- Docs ----
 *.md

@@ -1,3 +1,4 @@
+import { ensureServerProjectFolder } from './ServerProjectIdentity.js';
 import { debug, debugFetch as fetch } from '../core/Debug.js';
 
 import Config                    from '../core/Config.js';
@@ -101,9 +102,8 @@ export async function unpublishActiveProject() {
     );
 }
 
-export async function getActiveProjectServerStatus() {
+export async function getActiveProjectServerStatus(project = MasterData.getActiveProject()) {
     if (!isConfigured()) return { exists: false, is_public: false, visibility: 'private' };
-    const project = MasterData.getActiveProject();
     if (!project) return { exists: false, is_public: false, visibility: 'private' };
     const projectFolder = getProjectFolderName(project);
 
@@ -221,7 +221,7 @@ export async function runJobOnServer(opts) {
 
     const project = MasterData.getActiveProject();
     if (!project) throw new Error('No active project. Initialise storage first.');
-    const projectFolder = getProjectFolderName(project);
+    const projectFolder = await ensureServerProjectFolder(project);
 
     const stepId     = currentScript.id;
     const isBirdnet  = stepId === 'birdnet';
